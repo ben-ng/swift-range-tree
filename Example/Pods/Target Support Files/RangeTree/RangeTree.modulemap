@@ -1,0 +1,6 @@
+framework module RangeTree {
+  umbrella header "RangeTree-umbrella.h"
+
+  export *
+  module * { export * }
+}

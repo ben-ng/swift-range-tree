@@ -1,0 +1,16 @@
+PODS:
+  - RangeTree (0.1.0)
+
+DEPENDENCIES:
+  - RangeTree (from `../`)
+
+EXTERNAL SOURCES:
+  RangeTree:
+    :path: ../
+
+SPEC CHECKSUMS:
+  RangeTree: 7816ce7eb23abd0bf4dd8654e464f7ad43d73f6f
+
+PODFILE CHECKSUM: d6c0629325c21eccaa3b6666ec8134a270aafbf1
+
+COCOAPODS: 1.0.1

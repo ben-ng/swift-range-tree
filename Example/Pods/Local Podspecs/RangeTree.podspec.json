@@ -1,0 +1,22 @@
+{
+  "name": "RangeTree",
+  "version": "0.1.0",
+  "summary": "A short description of RangeTree.",
+  "description": "TODO: Add long description of the pod here.",
+  "homepage": "https://github.com/<GITHUB_USERNAME>/RangeTree",
+  "license": {
+    "type": "MIT",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "Ben Ng": "me@benng.me"
+  },
+  "source": {
+    "git": "https://github.com/<GITHUB_USERNAME>/RangeTree.git",
+    "tag": "0.1.0"
+  },
+  "platforms": {
+    "ios": "8.0"
+  },
+  "source_files": "RangeTree/Classes/**/*"
+}
