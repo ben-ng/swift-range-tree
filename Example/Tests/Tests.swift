@@ -35,6 +35,8 @@ class Tests: XCTestCase {
         let a = RangeTree<Double>(values: [8, 1, 10, 4, 2, 7, 5, 3, 9, 6])
         XCTAssertEqual(a.debugDescription, "1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0")
         XCTAssertEqual(a.valuesInRange(rangePerDimension: (3.0, 6.0)), [3.0, 4.0, 5.0, 6.0])
+        a.insert(4.5)
+        XCTAssertEqual(a.valuesInRange(rangePerDimension: (3.0, 6.0)), [3.0, 4.0, 4.5, 5.0, 6.0])
     }
     
     func testTwoDimensionalRangeTree() {
@@ -55,6 +57,8 @@ class Tests: XCTestCase {
         XCTAssertEqual(b.valuesInRange(rangePerDimension: (1.0, 2.0), (5.0, 8.0)), [CGPoint(x: 2, y: 7)])
         XCTAssertEqual(b.valuesInRange(rangePerDimension: (1.0, 3.0), (5.0, 8.0)), [CGPoint(x: 2, y: 7)])
         XCTAssertEqual(b.valuesInRange(rangePerDimension: (2.0, 6.0), (2.0, 6.0)).sorted(by: asc), [CGPoint(x: 4, y: 5), CGPoint(x: 5, y: 4)].sorted(by: asc))
+        b.insert(CGPoint(x:2.2, y: 5.3))
+        XCTAssertEqual(b.valuesInRange(rangePerDimension: (1.0, 3.0), (5.0, 8.0)).sorted(by: asc), [CGPoint(x: 2, y: 7), CGPoint(x: 2.2, y: 5.3)].sorted(by: asc))
     }
     
     func testTwoDimensionalRangeTreeConstructorPerformance() {
