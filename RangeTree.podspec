@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
   s.name             = 'RangeTree'
   s.version          = '0.1.0'
-  s.summary          = 'A short description of RangeTree.'
+  s.summary          = 'Perform orthorgonal range queries in log time'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -18,17 +18,16 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-TODO: Add long description of the pod here.
+This range tree allows you to perform orthorgonal range queries in logarithmic time.
                        DESC
 
-  s.homepage         = 'https://github.com/<GITHUB_USERNAME>/RangeTree'
-  # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
+  s.homepage         = 'https://github.com/ben-ng/swift-range-tree'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Ben Ng' => 'me@benng.me' }
-  s.source           = { :git => 'https://github.com/<GITHUB_USERNAME>/RangeTree.git', :tag => s.version.to_s }
-  # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
+  s.source           = { :git => 'https://github.com/ben-ng/swift-range-tree.git', :tag => s.version.to_s }
+  s.social_media_url = 'https://twitter.com/_benng'
 
-  s.ios.deployment_target = '8.0'
+  s.ios.deployment_target = '10.0'
 
   s.source_files = 'RangeTree/Classes/**/*'
   
