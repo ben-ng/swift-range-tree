@@ -1,6 +1,6 @@
 # RangeTree
 
-[![CI Status](http://img.shields.io/travis/Ben Ng/RangeTree.svg?style=flat)](https://travis-ci.org/Ben Ng/RangeTree)
+[![CI Status](http://img.shields.io/travis/ben-ng/swift-range-tree.svg?style=flat)](https://travis-ci.org/ben-ng/swift-range-tree)
 [![Version](https://img.shields.io/cocoapods/v/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
 [![License](https://img.shields.io/cocoapods/l/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
 [![Platform](https://img.shields.io/cocoapods/p/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
