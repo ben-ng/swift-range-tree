@@ -17,11 +17,11 @@ internal class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible {
     }
     
     required init(values: [Point]) {
-        rootNode = RangeTreeNode<Point>(dimension: 0, values: values)
+        rootNode = RangeTreeNode<Point>(values: values, dimension: 0)
     }
     
     func insert(_ newPoint: Point) {
-        rootNode = rootNode.insert(dimension: 0, value: newPoint)
+        rootNode = rootNode.insert(value: newPoint, dimension: 0)
     }
     
     func valuesInRange(rangePerDimension: (Point.Position, Point.Position)...) -> [Point] {
@@ -34,6 +34,99 @@ internal class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible {
 fileprivate enum Direction {
     case Left
     case Right
+}
+
+fileprivate struct Bucket<Point: RangeTreePoint> {
+    let position: Point.Position
+    var values: [Point]
+    var rangeInSortedOriginalValues: Range<Int>
+    
+    init(position pos: Point.Position, initialValue: Point, indexOfFirstValueInSortedValues firstValIndex: Int) {
+        position = pos
+        rangeInSortedOriginalValues = firstValIndex..<firstValIndex+1
+        values = [initialValue]
+    }
+}
+
+fileprivate struct PreprocessedDimensionData<Point: RangeTreePoint> {
+    let buckets: ArraySlice<Bucket<Point>>
+    let sortedOriginalValues: ArraySlice<Point>
+    // Gets the values in the buckets in the current slice
+    var values: ArraySlice<Point> {
+        get {
+            if buckets.isEmpty {
+                return []
+            }
+            else {
+                let lowerBound = buckets.first!.rangeInSortedOriginalValues.lowerBound
+                let upperBound = buckets.last!.rangeInSortedOriginalValues.upperBound
+                return sortedOriginalValues[lowerBound..<upperBound]
+            }
+        }
+    }
+    var midIndex: Int {
+        get {
+            return buckets.startIndex + buckets.count / 2
+        }
+    }
+    var leftSubtreeData: PreprocessedDimensionData<Point> {
+        get {
+            return PreprocessedDimensionData<Point>(buckets: buckets[buckets.startIndex..<midIndex], sortedOriginalValues: sortedOriginalValues)
+        }
+    }
+    var rightSubtreeData: PreprocessedDimensionData<Point> {
+        get {
+            return PreprocessedDimensionData<Point>(buckets: buckets.suffix(from: midIndex), sortedOriginalValues: sortedOriginalValues)
+        }
+    }
+    var max: Point.Position? {
+        get {
+            return buckets.last?.position
+        }
+    }
+    var min: Point.Position? {
+        get {
+            return buckets.first?.position
+        }
+    }
+    var leftSubtreeMax: Point.Position? {
+        return leftSubtreeData.max
+    }
+    var rightSubtreeMin: Point.Position? {
+        return rightSubtreeData.min
+    }
+    
+    init(dimension onDimension: Int, values: ArraySlice<Point>) {
+        let sortedValues = values.sorted {$0.positionIn(dimension: onDimension) < $1.positionIn(dimension: onDimension)}
+        var lastValueBucket: Bucket<Point>?
+        var processed = [Bucket<Point>]()
+        for (sortedIndex, value) in sortedValues.enumerated() {
+            let pos = value.positionIn(dimension: onDimension)
+            let shouldAppendToLastBucket = lastValueBucket?.position == pos
+            
+            if shouldAppendToLastBucket {
+                lastValueBucket!.values.append(value)
+            }
+            else {
+                if var lastValueBucket = lastValueBucket {
+                    lastValueBucket.rangeInSortedOriginalValues = lastValueBucket.rangeInSortedOriginalValues.lowerBound..<sortedIndex
+                    processed.append(lastValueBucket)
+                }
+                lastValueBucket = Bucket<Point>(position: pos, initialValue: value, indexOfFirstValueInSortedValues: sortedIndex)
+            }
+        }
+        if var lastValueBucket = lastValueBucket {
+            lastValueBucket.rangeInSortedOriginalValues = lastValueBucket.rangeInSortedOriginalValues.lowerBound..<sortedValues.count
+            processed.append(lastValueBucket)
+        }
+        buckets = ArraySlice<Bucket<Point>>(processed)
+        sortedOriginalValues = ArraySlice<Point>(sortedValues)
+    }
+    
+    init(buckets b: ArraySlice<Bucket<Point>>, sortedOriginalValues v: ArraySlice<Point>) {
+        buckets = b
+        sortedOriginalValues = v
+    }
 }
 
 fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible {
@@ -78,50 +171,37 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
         }
     }
     
-    init(dimension onDimension: Int, values: [Point]) {
-        let sortedValues = values.sorted {$0.positionIn(dimension: onDimension) < $1.positionIn(dimension: onDimension)}
-        var lastValuePosition: Point.Position?
-        var lastValueBucket = [Point]()
-        var processed: [(Point.Position, [Point])] = []
-        for value in sortedValues {
-            let pos = value.positionIn(dimension: onDimension)
-            let shouldAppendToLastBucket = lastValuePosition != nil && lastValuePosition == pos
-            
-            if shouldAppendToLastBucket {
-                lastValueBucket.append(value)
-            }
-            else {
-                if let lastValuePosition = lastValuePosition {
-                    processed.append((lastValuePosition, lastValueBucket))
-                }
-                lastValueBucket = [value]
-                lastValuePosition = pos
-            }
-        }
-        if let lastValuePosition = lastValuePosition {
-            processed.append((lastValuePosition, lastValueBucket))
-        }
-        self.init(dimension: onDimension, presortedValueBuckets: ArraySlice<(Point.Position, [Point])>(processed))
+    init(values: [Point], dimension onDimension: Int=0) {
+        self.init(values: ArraySlice<Point>(values), dimension: onDimension)
     }
     
-    init(dimension onDimension: Int, presortedValueBuckets buckets: ArraySlice<(Point.Position, [Point])>) {
+    init(values: ArraySlice<Point>, dimension onDimension: Int=0) {
+        self.init(dimension: onDimension, preprocessedDataForDimension: PreprocessedDimensionData(dimension: onDimension, values: values))
+    }
+    
+    private init(dimension onDimension: Int, preprocessedDataForDimension _preprocessedDataForDimension: PreprocessedDimensionData<Point>?=nil) {
+        // If a second argument was not provided, assume an empty node is being created, and generate empty preprocessed data
+        let curData = _preprocessedDataForDimension ?? PreprocessedDimensionData<Point>(dimension: onDimension, values: [])
         let hasNextDimension = onDimension < Point.dimensions - 1
+        let buckets = curData.buckets
         
         if buckets.count == 0 {
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                RangeTreeNode<Point>(dimension: onDimension + 1, values: []) :
+                RangeTreeNode<Point>(dimension: onDimension + 1) :
                 nil
             self = .InternalNode(left: .MinSentinel(), right: .MaxSentinel(), limits: (nil, nil), weight: 2, nextDimension: nextDimension)
         }
         else if buckets.count == 1 {
-            let (leafPosition, leafValues) = buckets.first!
+            let bucket = buckets.first!
+            let leafValues = bucket.values
+            let leafPosition = bucket.position
             
             // Note that the same next dimension tree can be used for the internal node as well as the leaf node; there's
             // only one value in both cases, and it's the same value.
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                RangeTreeNode<Point>(dimension: onDimension + 1, values: leafValues) :
+                RangeTreeNode<Point>(values: leafValues, dimension: onDimension + 1) :
                 nil
-            let leafNode: RangeTreeNode<Point> = .Leaf(position: leafPosition, values: leafValues, nextDimension: nextDimension)
+            let leafNode: RangeTreeNode<Point> = .Leaf(position: bucket.position, values: leafValues, nextDimension: nextDimension)
             
             if buckets.startIndex == 0 {
                 self = .InternalNode(left: .MinSentinel(), right: leafNode, limits: (nil, leafPosition), weight: 2, nextDimension: nextDimension)
@@ -134,36 +214,31 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
             }
         }
         else {
-            let midIndex = buckets.startIndex + buckets.count / 2
-            let leftRange = buckets[buckets.startIndex..<midIndex]
-            let rightRange = buckets.suffix(from: midIndex)
-            let leftTreeMax: Point.Position? = buckets.count == 0 ? nil : leftRange.last!.0
-            let rightTreeMin: Point.Position? = buckets.count == 0 ? nil : rightRange.first!.0
-            let leftTree = RangeTreeNode<Point>.init(dimension: onDimension, presortedValueBuckets: leftRange)
-            let rightTree = RangeTreeNode<Point>.init(dimension: onDimension, presortedValueBuckets: rightRange)
-            let values = buckets.map({$0.1}).reduce([], +)
+            let leftTree = RangeTreeNode<Point>.init(dimension: onDimension, preprocessedDataForDimension: curData.leftSubtreeData)
+            let rightTree = RangeTreeNode<Point>.init(dimension: onDimension, preprocessedDataForDimension: curData.rightSubtreeData)
+            let values = curData.values
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                RangeTreeNode<Point>(dimension: onDimension + 1, values: values) :
+                RangeTreeNode<Point>(values: values, dimension: onDimension + 1) :
                 nil
-            self = .InternalNode(left: leftTree, right: rightTree, limits: (leftTreeMax, rightTreeMin), weight: leftTree.weight + rightTree.weight, nextDimension: nextDimension)
+            self = .InternalNode(left: leftTree, right: rightTree, limits: (curData.leftSubtreeMax, curData.rightSubtreeMin), weight: leftTree.weight + rightTree.weight, nextDimension: nextDimension)
         }
     }
     
-    func insert(dimension onDimension: Int, value newValue: Point) -> RangeTreeNode {
+    func insert(value newValue: Point, dimension onDimension: Int) -> RangeTreeNode {
         let hasNextDimension = onDimension < Point.dimensions - 1
         let newPosition = newValue.positionIn(dimension: onDimension)
         
         switch self {
         case .MinSentinel():
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                RangeTreeNode<Point>(dimension: onDimension + 1, values: [newValue]) :
+                RangeTreeNode<Point>(values: [newValue], dimension: onDimension + 1) :
             nil
             let right: RangeTreeNode<Point> = .Leaf(position: newPosition, values: [newValue], nextDimension: nextDimension)
             return .InternalNode(left: .MinSentinel(), right: right, limits: (nil, newPosition), weight: 2, nextDimension: nextDimension)
             
         case .MaxSentinel():
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                RangeTreeNode<Point>(dimension: onDimension + 1, values: [newValue]) :
+                RangeTreeNode<Point>(values: [newValue], dimension: onDimension + 1) :
             nil
             let left: RangeTreeNode<Point> = .Leaf(position: newPosition, values: [newValue], nextDimension: nextDimension)
             return .InternalNode(left: left, right: .MaxSentinel(), limits: (newPosition, nil), weight: 2, nextDimension: nextDimension)
@@ -172,17 +247,17 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
             // If a leaf for this position already exists, append the value to the leaf
             if newPosition == oldPosition {
                 let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                    RangeTreeNode<Point>(dimension: onDimension + 1, values: oldValues + [newValue]) :
+                    RangeTreeNode<Point>(values: oldValues + [newValue], dimension: onDimension + 1) :
                     nil
                 return .Leaf(position: oldPosition, values: oldValues + [newValue], nextDimension: nextDimension)
             }
             // Otherwise, split the existing leaf up by turning it into an internal node
             else {
                 let nextLeafDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                    RangeTreeNode<Point>(dimension: onDimension + 1, values: [newValue]) :
+                    RangeTreeNode<Point>(values: [newValue], dimension: onDimension + 1) :
                     nil
                 let nextInternalNodeDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                    RangeTreeNode<Point>(dimension: onDimension + 1, values: oldValues + [newValue]) :
+                    RangeTreeNode<Point>(values: oldValues + [newValue], dimension: onDimension + 1) :
                     nil
                 
                 if newPosition < oldPosition {
@@ -203,19 +278,19 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
             
         case let .InternalNode(left, right, (leftTreeMax, rightTreeMin), weight, _):
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                RangeTreeNode<Point>(dimension: onDimension + 1, values: left.values + right.values + [newValue]) :
+                RangeTreeNode<Point>(values: left.values + right.values + [newValue], dimension: onDimension + 1) :
                 nil
             
             if lte(newPosition, leftTreeMax) {
-                return .InternalNode(left: left.insert(dimension: onDimension, value: newValue), right: right, limits: (leftTreeMax, rightTreeMin), weight: weight + 1, nextDimension: nextDimension)
+                return .InternalNode(left: left.insert(value: newValue, dimension: onDimension), right: right, limits: (leftTreeMax, rightTreeMin), weight: weight + 1, nextDimension: nextDimension)
             }
             else if gte(newPosition, rightTreeMin) {
-                return .InternalNode(left: left, right: right.insert(dimension: onDimension, value: newValue), limits: (leftTreeMax, rightTreeMin), weight: weight + 1, nextDimension: nextDimension)
+                return .InternalNode(left: left, right: right.insert(value: newValue, dimension: onDimension), limits: (leftTreeMax, rightTreeMin), weight: weight + 1, nextDimension: nextDimension)
             }
             // If the new position sits between the max of the left tree and the min of the right tree, (arbitrarily) insert
             // it on the left subtree, taking care to update the max of the left tree to the new position
             else {
-                return .InternalNode(left: left.insert(dimension: onDimension, value: newValue), right: right, limits: (newPosition, rightTreeMin), weight: weight + 1, nextDimension: nextDimension)
+                return .InternalNode(left: left.insert(value: newValue, dimension: onDimension), right: right, limits: (newPosition, rightTreeMin), weight: weight + 1, nextDimension: nextDimension)
             }
         }
     }
