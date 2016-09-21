@@ -11,4 +11,4 @@ language: objective-c
 # - pod install --project-directory=Example
 script:
 - set -o pipefail && xcodebuild test -workspace Example/RangeTree.xcworkspace -scheme RangeTree-Example -sdk iphonesimulator10.0 ONLY_ACTIVE_ARCH=NO -destination 'platform=iOS Simulator,name=iPhone 7,OS=10.0' | xcpretty
-- pod lib lint
+# - pod lib lint
