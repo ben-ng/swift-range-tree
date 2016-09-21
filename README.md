@@ -51,9 +51,9 @@ This module implements an n-dimensional range tree -- you define how many dimens
 Tested on my quad-core 2.8 GHz i7 Retina MacBook Pro:
 
  * Constructing a tree
- 	* 1000 points: 0.219s
- 	* 10000 points: 2.284s
- 	* 100000 points: 19.279s
+ 	* 1000 points: 0.133s
+ 	* 10000 points: 1.104s
+ 	* 100000 points: 8.420s
  * Querying a tree
  	* 1000 points: 0.001s (naive `Array.filter`: 0.000s)
  	* 10000 points: 0.002s (naive `Array.filter`: 0.004s)
