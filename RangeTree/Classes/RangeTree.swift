@@ -8,8 +8,13 @@
 
 import Foundation
 
-internal class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible {
+internal class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible, CustomStringConvertible {
     private var rootNode: RangeTreeNode<Point>
+    var description: String {
+        get {
+            return rootNode.description
+        }
+    }
     var debugDescription: String {
         get {
             return rootNode.debugDescription
@@ -129,7 +134,7 @@ fileprivate struct PreprocessedDimensionData<Point: RangeTreePoint> {
     }
 }
 
-fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible {
+fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible, CustomStringConvertible {
     case MinSentinel()
     case MaxSentinel()
     indirect case Leaf(position: Point.Position, values: [Point], nextDimension: RangeTreeNode<Point>?)
@@ -157,7 +162,7 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
                 return 1
             case .MaxSentinel():
                 return 1
-            case let .Leaf(_, values, _):
+            case .Leaf:
                 return 1
             case let .InternalNode(left, right, _, _, _):
                 return left.weight + right.weight
@@ -165,9 +170,25 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
         }
     }
     
-    var debugDescription: String {
+    var description: String {
         get {
             return values.map({"\($0)"}).joined(separator: " ")
+        }
+    }
+    
+    // This isn't very robust, but it's good enough
+    var debugDescription: String {
+        get {
+            switch self {
+            case .MinSentinel():
+                return "\"MINSENTINEL\""
+            case .MaxSentinel():
+                return "\"MAXSENTINEL\""
+            case let .Leaf(pos, values, _):
+                return "\"\(pos): " + values.map({"\($0)"}).joined(separator: ", ") + "\""
+            case let .InternalNode(left, right, (lMax, rMin), _, _):
+                return "{leftMax: \"\(lMax)\", rightMin: \"\(rMin)\", left: \(left.debugDescription), right: \(right.debugDescription)}"
+            }
         }
     }
     
@@ -176,20 +197,30 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
     }
     
     init(values: ArraySlice<Point>, dimension onDimension: Int=0) {
-        self.init(dimension: onDimension, preprocessedDataForDimension: PreprocessedDimensionData(dimension: onDimension, values: values))
+        self.init(dimension: onDimension, preprocessedDataForDimension: PreprocessedDimensionData(dimension: onDimension, values: values), insertSentinels: true)
     }
     
-    private init(dimension onDimension: Int, preprocessedDataForDimension _preprocessedDataForDimension: PreprocessedDimensionData<Point>?=nil) {
+    private init(dimension onDimension: Int, preprocessedDataForDimension _preprocessedDataForDimension: PreprocessedDimensionData<Point>?=nil, insertSentinels: Bool) {
         // If a second argument was not provided, assume an empty node is being created, and generate empty preprocessed data
         let curData = _preprocessedDataForDimension ?? PreprocessedDimensionData<Point>(dimension: onDimension, values: [])
         let hasNextDimension = onDimension < Point.dimensions - 1
         let buckets = curData.buckets
+        var rootNode: RangeTreeNode<Point>
         
         if buckets.count == 0 {
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                RangeTreeNode<Point>(dimension: onDimension + 1) :
+                RangeTreeNode<Point>(dimension: onDimension + 1, preprocessedDataForDimension: nil, insertSentinels: true) :
                 nil
-            self = .InternalNode(left: .MinSentinel(), right: .MaxSentinel(), limits: (nil, nil), weight: 2, nextDimension: nextDimension)
+            if insertSentinels {
+                self = .InternalNode(left: .MinSentinel(), right: .MaxSentinel(), limits: (nil, nil), weight: 2, nextDimension: nextDimension)
+                // Special case! Don't do the insertSentinel at the end or you'll double up on them
+                return
+            }
+            else {
+                assertionFailure("Invalid recursive call to init on an empty value set")
+                self = .MinSentinel()
+                return
+            }
         }
         else if buckets.count == 1 {
             let bucket = buckets.first!
@@ -201,26 +232,62 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
                 RangeTreeNode<Point>(values: leafValues, dimension: onDimension + 1) :
                 nil
-            let leafNode: RangeTreeNode<Point> = .Leaf(position: bucket.position, values: leafValues, nextDimension: nextDimension)
-            
-            if buckets.startIndex == 0 {
-                self = .InternalNode(left: .MinSentinel(), right: leafNode, limits: (nil, leafPosition), weight: 2, nextDimension: nextDimension)
-            }
-            else if buckets.startIndex == buckets.count - 1 {
-                self = .InternalNode(left: leafNode, right: .MaxSentinel(), limits: (leafPosition, nil), weight: 2, nextDimension: nextDimension)
-            }
-            else {
-                self = leafNode
-            }
+            rootNode = .Leaf(position: bucket.position, values: leafValues, nextDimension: nextDimension)
         }
         else {
-            let leftTree = RangeTreeNode<Point>.init(dimension: onDimension, preprocessedDataForDimension: curData.leftSubtreeData)
-            let rightTree = RangeTreeNode<Point>.init(dimension: onDimension, preprocessedDataForDimension: curData.rightSubtreeData)
-            let values = curData.values
+            let leftTree = RangeTreeNode<Point>.init(dimension: onDimension, preprocessedDataForDimension: curData.leftSubtreeData, insertSentinels: false)
+            let rightTree = RangeTreeNode<Point>.init(dimension: onDimension, preprocessedDataForDimension: curData.rightSubtreeData, insertSentinels: false)
             let nextDimension: RangeTreeNode<Point>? = hasNextDimension ?
-                RangeTreeNode<Point>(values: values, dimension: onDimension + 1) :
+                RangeTreeNode<Point>(values: curData.values, dimension: onDimension + 1) :
                 nil
-            self = .InternalNode(left: leftTree, right: rightTree, limits: (curData.leftSubtreeMax, curData.rightSubtreeMin), weight: leftTree.weight + rightTree.weight, nextDimension: nextDimension)
+            rootNode = .InternalNode(left: leftTree, right: rightTree, limits: (curData.leftSubtreeMax, curData.rightSubtreeMin), weight: leftTree.weight + rightTree.weight, nextDimension: nextDimension)
+        }
+        
+        if insertSentinels && curData.buckets.count > 0 {
+            let newRootNode = rootNode.insertMinSentinel(min: curData.buckets.first!.position)
+                            .insertMaxSentinel(max: curData.buckets.last!.position)
+            self = newRootNode
+        }
+        else {
+            self = rootNode
+        }
+    }
+    
+    private func insertMinSentinel(min: Point.Position) -> RangeTreeNode {
+        switch self {
+        case .MinSentinel:
+            assertionFailure("Cannot insert sentinels when they already exist")
+            return self
+        case .MaxSentinel:
+            return self
+        case let .Leaf(pos, values, nextDimension):
+            if pos == min {
+                return .InternalNode(left: .MinSentinel(), right: self, limits: (nil, pos), weight: 2, nextDimension: nextDimension)
+            }
+            else {
+                return self
+            }
+        case let .InternalNode(left, right, limits, weight, nextDimension):
+            return .InternalNode(left: left.insertMinSentinel(min: min), right: right, limits: limits, weight: weight + 2, nextDimension: nextDimension)
+        }
+    }
+    
+    private func insertMaxSentinel(max: Point.Position) -> RangeTreeNode {
+        switch self {
+        case .MinSentinel:
+            return self
+        case .MaxSentinel:
+            assertionFailure("Cannot insert sentinels when they already exist")
+            return self
+        case let .Leaf(pos, values, nextDimension):
+            if pos == max {
+                return RangeTreeNode<Point>.InternalNode(left: self, right: .MaxSentinel(), limits: (pos, nil), weight: 2, nextDimension: nextDimension)
+            }
+            else {
+                return self
+            }
+        case let .InternalNode(left, right, limits, weight, nextDimension):
+            return .InternalNode(left: left, right: right.insertMaxSentinel(max: max), limits: limits, weight: weight + 2, nextDimension: nextDimension)
         }
     }
     
@@ -352,6 +419,12 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
             if case let .Leaf(position, _, _) = commonAncestorRight {
                 answerNodes.append(commonAncestorRight)
             }
+//            print("-----------")
+//            print("Dimension: \(Point.dimensions - rangePerDimension.count)")
+//            print("Include: \(min)-\(max)")
+//            print("Structure: \(debugDescription)")
+//            print("Answer Nodes: \(answerNodes)")
+//            print("-----------")
             return answerNodes.map({ (node: RangeTreeNode<Point>) -> [Point] in
                 switch node {
                 case .MinSentinel():
