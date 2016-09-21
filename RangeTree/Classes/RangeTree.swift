@@ -225,7 +225,6 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
         else if buckets.count == 1 {
             let bucket = buckets.first!
             let leafValues = bucket.values
-            let leafPosition = bucket.position
             
             // Note that the same next dimension tree can be used for the internal node as well as the leaf node; there's
             // only one value in both cases, and it's the same value.
@@ -260,7 +259,7 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
             return self
         case .MaxSentinel:
             return self
-        case let .Leaf(pos, values, nextDimension):
+        case let .Leaf(pos, _, nextDimension):
             if pos == min {
                 return .InternalNode(left: .MinSentinel(), right: self, limits: (nil, pos), weight: 2, nextDimension: nextDimension)
             }
@@ -279,7 +278,7 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
         case .MaxSentinel:
             assertionFailure("Cannot insert sentinels when they already exist")
             return self
-        case let .Leaf(pos, values, nextDimension):
+        case let .Leaf(pos, _, nextDimension):
             if pos == max {
                 return RangeTreeNode<Point>.InternalNode(left: self, right: .MaxSentinel(), limits: (pos, nil), weight: 2, nextDimension: nextDimension)
             }
@@ -367,10 +366,10 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
         
         let (min, max) = rangePerDimension.first!
         
-        if case let .MinSentinel() = self {
+        if case .MinSentinel = self {
             return []
         }
-        if case let .MaxSentinel() = self {
+        if case .MaxSentinel = self {
             return []
         }
         
@@ -413,10 +412,10 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
             var answerNodes = leftAnsNodes + rightAnsNodes
             // We need to check for the special cases where the children of the common ancestor are leaves
             // If so, add them as answer nodes, and then let the map function filter them out if they're invalid
-            if case let .Leaf(position, _, _) = commonAncestorLeft {
+            if case .Leaf = commonAncestorLeft {
                 answerNodes.append(commonAncestorLeft)
             }
-            if case let .Leaf(position, _, _) = commonAncestorRight {
+            if case .Leaf = commonAncestorRight {
                 answerNodes.append(commonAncestorRight)
             }
 //            print("-----------")
@@ -486,7 +485,7 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
                 assertionFailure("Reached the MinSentinel, but path is non-empty")
             case .MaxSentinel():
                 assertionFailure("Reached the MaxSentinel, but path is non-empty")
-            case let .Leaf(_, _, _):
+            case .Leaf:
                 assertionFailure("Reached a leaf node, but path is non-empty")
             case let .InternalNode(left, right, _, _, _):
                 switch path.first! {
@@ -510,7 +509,7 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
                 assertionFailure("Reached the MinSentinel, but path is non-empty")
             case .MaxSentinel():
                 assertionFailure("Reached the MaxSentinel, but path is non-empty")
-            case let .Leaf(_, _, _):
+            case .Leaf:
                 assertionFailure("Reached a leaf node, but path is non-empty")
             case let .InternalNode(left, right, _, _, _):
                 switch path.first! {
@@ -549,11 +548,11 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
     
     func pathToPredecessor(of needle: Point.Position) -> [Direction] {
         switch self {
-        case .MinSentinel():
+        case .MinSentinel:
             return []
-        case .MaxSentinel():
+        case .MaxSentinel:
             return []
-        case let .Leaf(position, value, _):
+        case .Leaf:
             return []
             
         case let .InternalNode(left, right, (_, rightTreeMin), _, _):
@@ -568,11 +567,11 @@ fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConverti
     
     func pathToSuccessor(of needle: Point.Position) -> [Direction] {
         switch self {
-        case .MinSentinel():
+        case .MinSentinel:
             return []
-        case .MaxSentinel():
+        case .MaxSentinel:
             return []
-        case let .Leaf(position, value, _):
+        case .Leaf:
             return []
             
         case let .InternalNode(left, right, (leftTreeMax, _), _, _):
