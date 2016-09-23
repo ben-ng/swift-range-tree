@@ -11,14 +11,10 @@ import Foundation
 internal class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible, CustomStringConvertible {
     private var rootNode: RangeTreeNode<Point>
     var description: String {
-        get {
-            return rootNode.description
-        }
+        return rootNode.description
     }
     var debugDescription: String {
-        get {
-            return rootNode.debugDescription
-        }
+        return rootNode.debugDescription
     }
     
     required init(values: [Point]) {
@@ -36,12 +32,12 @@ internal class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible, C
     }
 }
 
-fileprivate enum Direction {
+private enum Direction {
     case Left
     case Right
 }
 
-fileprivate struct Bucket<Point: RangeTreePoint> {
+private struct Bucket<Point: RangeTreePoint> {
     let position: Point.Position
     var values: [Point]
     var rangeInSortedOriginalValues: Range<Int>
@@ -53,46 +49,34 @@ fileprivate struct Bucket<Point: RangeTreePoint> {
     }
 }
 
-fileprivate struct PreprocessedDimensionData<Point: RangeTreePoint> {
+private struct PreprocessedDimensionData<Point: RangeTreePoint> {
     let buckets: ArraySlice<Bucket<Point>>
     let sortedOriginalValues: ArraySlice<Point>
     // Gets the values in the buckets in the current slice
     var values: ArraySlice<Point> {
-        get {
-            if buckets.isEmpty {
-                return []
-            }
-            else {
-                let lowerBound = buckets.first!.rangeInSortedOriginalValues.lowerBound
-                let upperBound = buckets.last!.rangeInSortedOriginalValues.upperBound
-                return sortedOriginalValues[lowerBound..<upperBound]
-            }
+        if buckets.isEmpty {
+            return []
+        }
+        else {
+            let lowerBound = buckets.first!.rangeInSortedOriginalValues.lowerBound
+            let upperBound = buckets.last!.rangeInSortedOriginalValues.upperBound
+            return sortedOriginalValues[lowerBound..<upperBound]
         }
     }
     var midIndex: Int {
-        get {
-            return buckets.startIndex + buckets.count / 2
-        }
+        return buckets.startIndex + buckets.count / 2
     }
     var leftSubtreeData: PreprocessedDimensionData<Point> {
-        get {
-            return PreprocessedDimensionData<Point>(buckets: buckets[buckets.startIndex..<midIndex], sortedOriginalValues: sortedOriginalValues)
-        }
+        return PreprocessedDimensionData<Point>(buckets: buckets[buckets.startIndex..<midIndex], sortedOriginalValues: sortedOriginalValues)
     }
     var rightSubtreeData: PreprocessedDimensionData<Point> {
-        get {
-            return PreprocessedDimensionData<Point>(buckets: buckets.suffix(from: midIndex), sortedOriginalValues: sortedOriginalValues)
-        }
+        return PreprocessedDimensionData<Point>(buckets: buckets.suffix(from: midIndex), sortedOriginalValues: sortedOriginalValues)
     }
     var max: Point.Position? {
-        get {
-            return buckets.last?.position
-        }
+        return buckets.last?.position
     }
     var min: Point.Position? {
-        get {
-            return buckets.first?.position
-        }
+        return buckets.first?.position
     }
     var leftSubtreeMax: Point.Position? {
         return leftSubtreeData.max
@@ -134,61 +118,53 @@ fileprivate struct PreprocessedDimensionData<Point: RangeTreePoint> {
     }
 }
 
-fileprivate enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible, CustomStringConvertible {
+private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible, CustomStringConvertible {
     case MinSentinel()
     case MaxSentinel()
     indirect case Leaf(position: Point.Position, values: [Point], nextDimension: RangeTreeNode<Point>?)
     indirect case InternalNode(left: RangeTreeNode<Point>, right: RangeTreeNode<Point>, limits: (Point.Position?, Point.Position?), weight: Int, nextDimension: RangeTreeNode<Point>?)
     
     var values: [Point] {
-        get {
-            switch self {
-            case .MinSentinel():
-                return []
-            case .MaxSentinel():
-                return []
-            case let .Leaf(_, values, _):
-                return values
-            case let .InternalNode(left, right, _, _, _):
-                return left.values + right.values
-            }
+        switch self {
+        case .MinSentinel():
+            return []
+        case .MaxSentinel():
+            return []
+        case let .Leaf(_, values, _):
+            return values
+        case let .InternalNode(left, right, _, _, _):
+            return left.values + right.values
         }
     }
     
     var weight: Int {
-        get {
-            switch self {
-            case .MinSentinel():
-                return 1
-            case .MaxSentinel():
-                return 1
-            case .Leaf:
-                return 1
-            case let .InternalNode(left, right, _, _, _):
-                return left.weight + right.weight
-            }
+        switch self {
+        case .MinSentinel():
+            return 1
+        case .MaxSentinel():
+            return 1
+        case .Leaf:
+            return 1
+        case let .InternalNode(left, right, _, _, _):
+            return left.weight + right.weight
         }
     }
     
     var description: String {
-        get {
-            return values.map({"\($0)"}).joined(separator: " ")
-        }
+        return values.map({"\($0)"}).joined(separator: " ")
     }
     
     // This isn't very robust, but it's good enough
     var debugDescription: String {
-        get {
-            switch self {
-            case .MinSentinel():
-                return "\"MINSENTINEL\""
-            case .MaxSentinel():
-                return "\"MAXSENTINEL\""
-            case let .Leaf(pos, values, _):
-                return "\"\(pos): " + values.map({"\($0)"}).joined(separator: ", ") + "\""
-            case let .InternalNode(left, right, (lMax, rMin), _, _):
-                return "{leftMax: \"\(lMax)\", rightMin: \"\(rMin)\", left: \(left.debugDescription), right: \(right.debugDescription)}"
-            }
+        switch self {
+        case .MinSentinel():
+            return "\"MINSENTINEL\""
+        case .MaxSentinel():
+            return "\"MAXSENTINEL\""
+        case let .Leaf(pos, values, _):
+            return "\"\(pos): " + values.map({"\($0)"}).joined(separator: ", ") + "\""
+        case let .InternalNode(left, right, (lMax, rMin), _, _):
+            return "{leftMax: \"\(lMax)\", rightMin: \"\(rMin)\", left: \(left.debugDescription), right: \(right.debugDescription)}"
         }
     }
     
