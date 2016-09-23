@@ -5,8 +5,7 @@
 osx_image: xcode8
 language: objective-c
 before_install:
-- gem uninstall cocoapods
-- gem install cocoapods -v 1.1.0.rc.2 # At this time of writing, 1.0.1 does not support Xcode 8
+- gem install cocoapods --pre # At this time of writing, 1.0.1 does not support Xcode 8
 script:
 - set -o pipefail && xcodebuild test -workspace Example/RangeTree.xcworkspace -scheme RangeTree-Example -sdk iphonesimulator10.0 ONLY_ACTIVE_ARCH=NO -destination 'platform=iOS Simulator,name=iPhone 7,OS=10.0' | xcpretty
 - pod lib lint
