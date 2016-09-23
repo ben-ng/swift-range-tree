@@ -5,9 +5,9 @@
 [![License](https://img.shields.io/cocoapods/l/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
 [![Platform](https://img.shields.io/cocoapods/p/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
 
-A range tree allows you to perform orthorgonal range searches in logarithmic time. i.e. If you had a bunch of points in two-dimensional space, you can figure out what points have an x coordinate between a and b, and a y coordinate between c and d.
+A range tree allows you to perform orthorgonal range searches in logarithmic time. i.e. If you had a bunch of points in two-dimensional space, and you want to quickly figure out what points have an x coordinate between a and b, and a y coordinate between c and d, this is the module for you.
 
-This module implements an n-dimensional range tree -- you define how many dimensions you need. Note that you will see a performance penalty if your dataset is too small. See the section on [performance](#performance) to gauge if your dataset is large enough to benefit from this data structure.
+This module implements an n-dimensional range tree. You define how many dimensions you need by implementing the `RangeTreePoint` protocol. Note that you will see a performance penalty versus a naive `Array.filter` if your dataset is too small. See the section on [performance](#performance) to gauge if your dataset is large enough to benefit from this data structure.
 
 ## Usage
 
@@ -48,16 +48,31 @@ This module implements an n-dimensional range tree -- you define how many dimens
 
 ## Performance
 
-Tested on my quad-core 2.8 GHz i7 Retina MacBook Pro:
+Quad-core 2.8 GHz i7 Retina MacBook Pro:
 
  * Constructing a tree
  	* 1000 points: 0.133s
  	* 10000 points: 1.104s
  	* 100000 points: 8.420s
+ 	* 1000000 points: 55.377s
  * Querying a tree
- 	* 1000 points: 0.001s (naive `Array.filter`: 0.000s)
- 	* 10000 points: 0.002s (naive `Array.filter`: 0.004s)
- 	* 100000 points: 0.008s (naive `Array.filter`: 0.029s)
+ 	* 1000 points: 0.001s (naive `Array.filter`: 0.000s) -- _slower_
+ 	* 10000 points: 0.002s (naive `Array.filter`: 0.004s) -- 2x faster
+ 	* 100000 points: 0.008s (naive `Array.filter`: 0.029s) - 3.6x faster
+ 	* 1000000 points: 0.056s (naive `Array.filter`: 0.266s) - 4.8x faster
+
+1.3 GHz Core m7 12" MacBook:
+
+ * Constructing a tree
+ 	* 1000 points: 0.206s
+ 	* 10000 points: 1.323s
+ 	* 100000 points: 10.413s
+ 	* 1000000 points: 85.719s
+ * Querying a tree
+ 	* 1000 points: 0.002s (naive `Array.filter`: 0.001s) -- _slower_
+ 	* 10000 points: 0.004s (naive `Array.filter`: 0.007s) -- 1.8x faster
+ 	* 100000 points: 0.013s (naive `Array.filter`: 0.038s) -- 2.9x faster
+ 	* 1000000 points: 0.089s (naive `Array.filter`: 0.436s) -- 4.9x faster
 
 ## Example & Tests
 
