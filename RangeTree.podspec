@@ -22,7 +22,7 @@ A range tree allows you to perform orthorgonal range searches in logarithmic tim
   s.social_media_url = 'https://twitter.com/_benng'
 
   s.ios.deployment_target = '10.0'
-  s.osx.deployment_target = '10.11.6'
+  s.osx.deployment_target = '10.11'
 
   s.source_files = 'RangeTree/Classes/**/*'
 end
