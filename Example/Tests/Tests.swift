@@ -1,6 +1,6 @@
 import UIKit
 import XCTest
-@testable import RangeTree
+import RangeTree
 
 let asc = {(a: CGPoint, b:CGPoint) -> Bool in
     if a.x == b.x {

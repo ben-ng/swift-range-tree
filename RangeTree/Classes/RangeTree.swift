@@ -8,24 +8,24 @@
 
 import Foundation
 
-internal class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible, CustomStringConvertible {
+public class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible, CustomStringConvertible {
     private var rootNode: RangeTreeNode<Point>
-    var description: String {
+    public var description: String {
         return rootNode.description
     }
-    var debugDescription: String {
+    public var debugDescription: String {
         return rootNode.debugDescription
     }
     
-    required init(values: [Point]) {
+    required public init(values: [Point]) {
         rootNode = RangeTreeNode<Point>(values: values, dimension: 0)
     }
     
-    func insert(_ newPoint: Point) {
+    public func insert(_ newPoint: Point) {
         rootNode = rootNode.insert(value: newPoint, dimension: 0)
     }
     
-    func valuesInRange(rangePerDimension: (Point.Position, Point.Position)...) -> [Point] {
+    public func valuesInRange(rangePerDimension: (Point.Position, Point.Position)...) -> [Point] {
         assert(rangePerDimension.count == Point.dimensions, "The number of ranges must match the number of dimensions")
         
         return rootNode.valuesIn(rangePerDimension: rangePerDimension.suffix(from: rangePerDimension.startIndex))
