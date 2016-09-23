@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
   s.name             = 'RangeTree'
   s.version          = '0.1.0'
-  s.summary          = 'Orthorgonal range searches in logarithmic time"
+  s.summary          = 'Orthorgonal range searches in logarithmic time'
 
   s.description      = <<-DESC
 A range tree allows you to perform orthorgonal range searches in logarithmic time.
