@@ -5,9 +5,9 @@
 [![License](https://img.shields.io/cocoapods/l/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
 [![Platform](https://img.shields.io/cocoapods/p/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
 
-A range tree allows you to perform orthorgonal range queries in logarithmic time. i.e. given a set of points with coordinates `c_1, c_2, ... c_n`, what is the set of points that satisfy the constraints `c_1_min < c_1 < c_1_max, c_2_min < c_2 < c_2_max, ... c_n_min < c_n < c_n_max`?
+A range tree allows you to perform orthorgonal range searches in logarithmic time. i.e. If you had a bunch of points in two-dimensional space, you can figure out what points have an x coordinate between a and b, and a y coordinate between c and d.
 
-This module implements an n-dimensional range tree for any integer `n > 0`. Note that you will see a performance penalty if your dataset is too small. See the section on [performance](#performance) to gauge if your dataset is large enough to benefit from this data structure.
+This module implements an n-dimensional range tree -- you define how many dimensions you need. Note that you will see a performance penalty if your dataset is too small. See the section on [performance](#performance) to gauge if your dataset is large enough to benefit from this data structure.
 
 ## Usage
 

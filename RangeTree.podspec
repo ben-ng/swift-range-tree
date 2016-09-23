@@ -9,16 +9,10 @@
 Pod::Spec.new do |s|
   s.name             = 'RangeTree'
   s.version          = '0.1.0'
-  s.summary          = 'Perform orthorgonal range queries in log time'
-
-# This description is used to generate tags and improve search results.
-#   * Think: What does it do? Why did you write it? What is the focus?
-#   * Try to keep it short, snappy and to the point.
-#   * Write the description between the DESC delimiters below.
-#   * Finally, don't worry about the indent, CocoaPods strips it!
+  s.summary          = 'Orthorgonal range searches in logarithmic time"
 
   s.description      = <<-DESC
-This range tree allows you to perform orthorgonal range queries in logarithmic time.
+A range tree allows you to perform orthorgonal range searches in logarithmic time.
                        DESC
 
   s.homepage         = 'https://github.com/ben-ng/swift-range-tree'
@@ -30,12 +24,4 @@ This range tree allows you to perform orthorgonal range queries in logarithmic t
   s.ios.deployment_target = '10.0'
 
   s.source_files = 'RangeTree/Classes/**/*'
-  
-  # s.resource_bundles = {
-  #   'RangeTree' => ['RangeTree/Assets/*.png']
-  # }
-
-  # s.public_header_files = 'Pod/Classes/**/*.h'
-  # s.frameworks = 'UIKit', 'MapKit'
-  # s.dependency 'AFNetworking', '~> 2.3'
 end
