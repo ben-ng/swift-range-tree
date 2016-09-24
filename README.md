@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/cocoapods/l/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
 [![Platform](https://img.shields.io/cocoapods/p/RangeTree.svg?style=flat)](http://cocoapods.org/pods/RangeTree)
 
-A range tree allows you to perform orthorgonal range searches in logarithmic time. i.e. If you had a bunch of points in two-dimensional space, and you want to quickly figure out what points have an x coordinate between a and b, and a y coordinate between c and d, this is the module for you.
+A range tree allows you to perform orthorgonal range searches in polylogarithmic time. i.e. If you had a bunch of points in two-dimensional space, and you want to quickly figure out what points have an x coordinate between a and b, and a y coordinate between c and d, this is the module for you.
 
 This module implements an n-dimensional range tree. You define how many dimensions you need by implementing the `RangeTreePoint` protocol. Note that you will see a performance penalty versus a naive `Array.filter` if your dataset is too small. See the section on [performance](#performance) to gauge if your dataset is large enough to benefit from this data structure.
 
