@@ -8,7 +8,7 @@
 
 import Foundation
 
-public protocol RangeTreePoint {
+public protocol RangeTreePoint: Equatable {
     associatedtype Position: Comparable
     static var dimensions: Int { get}
     func positionIn(dimension: Int) -> Position

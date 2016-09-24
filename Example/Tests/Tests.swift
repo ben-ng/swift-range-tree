@@ -46,6 +46,9 @@ class Tests: XCTestCase {
         XCTAssertEqual(a.valuesInRange(rangePerDimension: (3.0, 6.0)), [3.0, 4.0, 5.0, 6.0])
         a.insert(4.5)
         XCTAssertEqual(a.valuesInRange(rangePerDimension: (3.0, 6.0)), [3.0, 4.0, 4.5, 5.0, 6.0])
+        a.remove(5.0)
+        a.remove(3.0)
+        XCTAssertEqual(a.valuesInRange(rangePerDimension: (3.0, 6.0)), [4.0, 4.5, 6.0])
     }
     
     func testOneDimensionalRangeTreeWithDuplicates() {
@@ -79,6 +82,9 @@ class Tests: XCTestCase {
         // Add a point that's a duplicate in one dimension but not the other
         b.insert(CGPoint(x: 2.2, y: 5.1))
         XCTAssertEqual(b.valuesInRange(rangePerDimension: (1.0, 3.0), (5.0, 8.0)).sorted(by: asc), [CGPoint(x: 2, y: 7), CGPoint(x: 2.2, y: 5.1), CGPoint(x: 2.2, y: 5.3)].sorted(by: asc))
+        
+        b.remove(CGPoint(x: 2, y: 7))
+        XCTAssertEqual(b.valuesInRange(rangePerDimension: (1.0, 3.0), (5.0, 8.0)).sorted(by: asc), [CGPoint(x: 2.2, y: 5.1), CGPoint(x: 2.2, y: 5.3)].sorted(by: asc))
     }
     
     func testTwoDimensionalRangeTreeConstructorPerformance() {

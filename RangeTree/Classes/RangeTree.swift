@@ -25,6 +25,10 @@ public class RangeTree<Point: RangeTreePoint>: CustomDebugStringConvertible, Cus
         rootNode = rootNode.insert(value: newPoint, dimension: 0)
     }
     
+    public func remove(_ point: Point) {
+        rootNode = rootNode.remove(value: point, dimension: 0)
+    }
+    
     public func valuesInRange(rangePerDimension: (Point.Position, Point.Position)...) -> [Point] {
         assert(rangePerDimension.count == Point.dimensions, "The number of ranges must match the number of dimensions")
         
@@ -124,7 +128,7 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
     indirect case Leaf(position: Point.Position, values: [Point], nextDimension: RangeTreeNode<Point>?)
     indirect case InternalNode(left: RangeTreeNode<Point>, right: RangeTreeNode<Point>, limits: (Point.Position?, Point.Position?), weight: Int, nextDimension: RangeTreeNode<Point>?)
     
-    var values: [Point] {
+    private var values: [Point] {
         switch self {
         case .MinSentinel():
             return []
@@ -137,7 +141,7 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
         }
     }
     
-    var weight: Int {
+    private var weight: Int {
         switch self {
         case .MinSentinel():
             return 1
@@ -145,8 +149,8 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
             return 1
         case .Leaf:
             return 1
-        case let .InternalNode(left, right, _, _, _):
-            return left.weight + right.weight
+        case let .InternalNode(_, _, _, weight, _):
+            return weight
         }
     }
     
@@ -337,6 +341,57 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
         }
     }
     
+    func remove(value valueToRemove: Point, dimension onDimension: Int) -> RangeTreeNode {
+        let removed = _remove(value: valueToRemove, dimension: onDimension)
+        if let removed = removed {
+            return removed
+        }
+        else {
+            assertionFailure("Internal RangeTree inconsistency: an empty root node was returned from _remove")
+            return self
+        }
+    }
+    
+    private func _remove(value valueToRemove: Point, dimension onDimension: Int) -> RangeTreeNode? {
+        let removalPosition = valueToRemove.positionIn(dimension: onDimension)
+        
+        switch self {
+        case .MinSentinel():
+            return self
+        case .MaxSentinel():
+            return self
+        case let .Leaf(position, values, oldNextDimension):
+            if position != removalPosition {
+                return self
+            }
+            else if values.count == 1 {
+                return nil
+            }
+            else {
+                return .Leaf(position: position, values: values.filter({$0 != valueToRemove}), nextDimension: oldNextDimension?.remove(value: valueToRemove, dimension: onDimension + 1))
+            }
+        case let .InternalNode(left, right, limits, weight, oldNextDimension):
+            let newLeft = left._remove(value: valueToRemove, dimension: onDimension)
+            let newRight = right._remove(value: valueToRemove, dimension: onDimension)
+            
+            // If neither subtree is now empty, we can simply return a new InternalNode
+            if let newLeft = newLeft, let newRight = newRight {
+                return .InternalNode(left: newLeft, right: newRight, limits: limits, weight: weight - 1, nextDimension: oldNextDimension?.remove(value: valueToRemove, dimension: onDimension + 1))
+            }
+            // Otherwise, we need to return a new Leaf node
+            else if newLeft == nil {
+                return newRight
+            }
+            else if newRight == nil {
+                return newLeft
+            }
+            else {
+                assertionFailure("Internal RangeTree inconsistency: an impossible branch was taken")
+                return self
+            }
+        }
+    }
+    
     func valuesIn(rangePerDimension: ArraySlice<(Point.Position, Point.Position)>) -> [Point] {
         assert(rangePerDimension.count > 0)
         
@@ -454,7 +509,7 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
         return []
     }
     
-    func nodesOnRightOfPath(path: ArraySlice<Direction>) -> [RangeTreeNode] {
+    private func nodesOnRightOfPath(path: ArraySlice<Direction>) -> [RangeTreeNode] {
         if path.count > 0 {
             switch self {
             case .MinSentinel():
@@ -478,7 +533,7 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
         return []
     }
     
-    func nodesOnLeftOfPath(path: ArraySlice<Direction>) -> [RangeTreeNode] {
+    private func nodesOnLeftOfPath(path: ArraySlice<Direction>) -> [RangeTreeNode] {
         if path.count > 0 {
             switch self {
             case .MinSentinel():
@@ -502,7 +557,7 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
         return []
     }
     
-    func nodeAtEndOfPath(path: ArraySlice<Direction>) -> RangeTreeNode {
+    private func nodeAtEndOfPath(path: ArraySlice<Direction>) -> RangeTreeNode {
         if path.count == 0 {
             return self
         }
@@ -522,7 +577,7 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
         return self
     }
     
-    func pathToPredecessor(of needle: Point.Position) -> [Direction] {
+    private func pathToPredecessor(of needle: Point.Position) -> [Direction] {
         switch self {
         case .MinSentinel:
             return []
@@ -541,7 +596,7 @@ private enum RangeTreeNode<Point: RangeTreePoint>: CustomDebugStringConvertible,
         }
     }
     
-    func pathToSuccessor(of needle: Point.Position) -> [Direction] {
+    private func pathToSuccessor(of needle: Point.Position) -> [Direction] {
         switch self {
         case .MinSentinel:
             return []
